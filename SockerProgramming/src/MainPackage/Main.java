@@ -15,13 +15,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.*;
 
 public class Main extends JFrame {
-<<<<<<< HEAD
-	
-	private static final Color primaryColor = new Color(93, 193, 242);
-=======
 
-	private static final Color primaryColor = new Color(52, 152, 219);
->>>>>>> branch 'main' of https://github.com/ThangNguyenSociu/Socket_Programming.git
+	private static final Color primaryColor = new Color(93, 193, 242);
 	private static final Color textColor = new Color(44, 62, 80);
 	private static final Font textInformationFont = new Font("Times New Roman", Font.BOLD, 20);
 	private static final Font textBtnFont = new Font("Times New Roman", Font.BOLD, 25);
@@ -96,11 +91,11 @@ public class Main extends JFrame {
 			System.err.println("Lỗi tải icon hoặc không thấy file icon" + e.getMessage());
 		}
 	}
-<<<<<<< HEAD
-	
-=======
-
->>>>>>> branch 'main' of https://github.com/ThangNguyenSociu/Socket_Programming.git
+//<<<<<<< HEAD
+//	
+//=======
+//
+//>>>>>>> branch 'main' of https://github.com/ThangNguyenSociu/Socket_Programming.git
 	private JLabel createLabelStudent(String text) {
 		JLabel label = new JLabel(text);
 		label.setFont(textInformationFont);
