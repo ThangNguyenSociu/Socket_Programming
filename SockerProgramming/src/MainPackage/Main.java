@@ -14,7 +14,7 @@ import javax.swing.*;
 
 public class Main extends JFrame {
 	
-	private static final Color primaryColor = new Color(52, 152, 219);
+	private static final Color primaryColor = new Color(93, 193, 242);
 	private static final Color textColor = new Color(44, 62, 80);
 	private static final Font textInformationFont = new Font("Times New Roman", Font.BOLD, 20);
 	private static final Font textBtnFont = new Font("Times New Roman", Font.BOLD, 25);
@@ -89,7 +89,6 @@ public class Main extends JFrame {
 		}
 	}
 	
-	
 	private JLabel createLabelStudent(String text) {
 		JLabel label = new JLabel(text);
 		label.setFont(textInformationFont);
@@ -111,7 +110,7 @@ public class Main extends JFrame {
 	
 	private void actionGoToPage(JButton button) {
 		button.addActionListener(e -> {
-			System.out.println("Đang chuyển sang trang chủ TCP");
+			System.out.println("Đang chuyển sang nội dung TCP");
 			new MainTCP(this).setVisible(true);
 			this.setVisible(false);
 		});
