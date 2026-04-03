@@ -91,11 +91,7 @@ public class Main extends JFrame {
 			System.err.println("Lỗi tải icon hoặc không thấy file icon" + e.getMessage());
 		}
 	}
-//<<<<<<< HEAD
-//	
-//=======
-//
-//>>>>>>> branch 'main' of https://github.com/ThangNguyenSociu/Socket_Programming.git
+
 	private JLabel createLabelStudent(String text) {
 		JLabel label = new JLabel(text);
 		label.setFont(textInformationFont);

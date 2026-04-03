@@ -103,7 +103,7 @@ public class JPanelServer extends JPanel {
 	    txtMessage.setFont(new Font("Times New Roman", Font.PLAIN, 15));
 	    txtMessage.setPreferredSize(new Dimension(400, 40));
 	    txtMessage.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Nhập tin nhắn để gửi đến Client...");
-	    txtMessage.putClientProperty(FlatClientProperties.STYLE, "arc: 15; margin: 0,10,0,10"); // Thêm lề trái/phải cho chữ
+	    txtMessage.putClientProperty(FlatClientProperties.STYLE, "arc: 15; margin: 0,10,0,10");
 
 	    JButton btnSend = new JButton("Gửi");
 	    btnSend.setFont(new Font("Times New Roman", Font.BOLD, 14));

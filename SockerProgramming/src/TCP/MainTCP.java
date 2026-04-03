@@ -58,7 +58,6 @@ public class MainTCP extends JFrame {
 	    JButton btnTransportFile = createButtonTCP("Truyền File");
 	    JButton btnCalculate = createButtonTCP("Giải Toán");
 	    JButton btnMiniGame = createButtonTCP("Mini Game");
-	    JButton btnConfigure = createButtonTCP("Cài đặt");
 	    JButton btnBack = createButtonBackTCP("Quay lại");
 	    
 	    cardLayout = new CardLayout();
@@ -69,15 +68,21 @@ public class MainTCP extends JFrame {
 	    JPanelHome panelHome = new JPanelHome();
 	    JPanelChat panelChat = new JPanelChat();
 	    JPanelFile panelFile = new JPanelFile();
+	    JPanelCalculate panelCalculate = new JPanelCalculate();
+	    JPanelMiniGame panelMiniGame = new JPanelMiniGame();
 	    
 	    contentArea.add(panelHome, "TrangChu");
 	    contentArea.add(panelChat, "Chat");
 	    contentArea.add(panelFile, "File");
+	    contentArea.add(panelCalculate, "Calculate");
+	    contentArea.add(panelMiniGame, "MiniGame");
 	    
 	    btnTrangChu.addActionListener(e -> cardLayout.show(contentArea, "TrangChu"));
 	    btnChat.addActionListener(e -> cardLayout.show(contentArea, "Chat"));
 	    btnTransportFile.addActionListener(e -> cardLayout.show(contentArea, "File"));
-
+	    btnCalculate.addActionListener(e -> cardLayout.show(contentArea, "Calculate"));
+	    btnMiniGame.addActionListener(e -> cardLayout.show(contentArea, "MiniGame"));
+	    
 	    contentPane.add(sidebar, BorderLayout.WEST);
 	    contentPane.add(contentArea, BorderLayout.CENTER);
 	    this.setContentPane(contentPane);

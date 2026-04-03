@@ -1,0 +1,56 @@
+package TCP.Calculate.RowServer;
+
+import java.awt.*;
+import javax.swing.*;
+
+public class JPanelRow3 extends JPanel {
+    private static final long serialVersionUID = 1L;
+    private JLabel labelString;
+    private JTextField txtString;
+    private JTextField txtResult;
+    private JButton send;
+    
+    public JPanelRow3() {
+        Row();
+    }
+    
+    private void Row() {
+        labelString = new JLabel("Nhập Chuỗi:");
+        txtString = new JTextField(25);
+        txtResult = new JTextField(25);
+        send = new JButton("Gửi kết quả");
+
+        labelString.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        txtString.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        txtResult.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        
+        txtString.setPreferredSize(new Dimension(300, 40));
+        txtString.setMaximumSize(new Dimension(400, 40));
+        txtString.putClientProperty("JComponent.roundRect", true);
+        
+        txtResult.setPreferredSize(new Dimension(300, 40));
+        txtResult.setMaximumSize(new Dimension(400, 40));
+        txtResult.putClientProperty("JComponent.roundRect", true);
+      
+        send.setPreferredSize(new Dimension(120, 40));
+        send.putClientProperty("JButton.buttonType", "roundRect");
+        send.setBackground(new Color(0, 123, 255)); 
+        send.setForeground(Color.WHITE);
+        send.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        this.setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+        this.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        this.add(labelString);
+        this.add(Box.createRigidArea(new Dimension(15, 0)));
+        this.add(txtString);
+        this.add(txtResult);
+        this.add(Box.createRigidArea(new Dimension(15, 0)));
+        this.add(send);
+    }
+    
+    public JButton getBtnSend() { return send; }
+    public String getStringText() { return txtString.getText().trim(); }
+    public void setStringText(String text) { this.txtString.setText(text); }
+    public void setStringTextResult(String text) { this.txtResult.setText(text); }
+}
