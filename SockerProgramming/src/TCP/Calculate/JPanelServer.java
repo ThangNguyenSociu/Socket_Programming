@@ -1,19 +1,11 @@
 package TCP.Calculate;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
 
 import TCP.Calculate.RowServer.JPanelRow1;
 import TCP.Calculate.RowServer.JPanelRow2;
@@ -40,22 +32,22 @@ public class JPanelServer extends JPanel {
 
     private void initComponents() {
     	this.setLayout(new GridLayout(4, 1));
-    	
+
     	row1 = new JPanelRow1();
 		row1.setBackground(bgColor);
-		
+
 		row2 = new JPanelRow2();
         row2.setBackground(whiteColor);
-        
-        
+
+
         row3 = new JPanelRow3();
 		row3.setBackground(bgColor);
-        
+
 		rowConnect = new JPanelRowConnect(row1, row2, row3);
         this.add(rowConnect);
-        this.add(row1); 
+        this.add(row1);
         this.add(row2);
         this.add(row3);
-	
+
     }
 }

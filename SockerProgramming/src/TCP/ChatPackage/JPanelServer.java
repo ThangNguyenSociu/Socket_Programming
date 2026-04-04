@@ -9,8 +9,13 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -21,11 +26,6 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.io.PrintWriter;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 
 import com.formdev.flatlaf.FlatClientProperties;
 
@@ -40,19 +40,19 @@ public class JPanelServer extends JPanel {
 		System.out.println("Server");
 		Server();
 	}
-	
+
 	private void Server() {
 	    this.setBackground(new Color(250, 250, 249));
 	    this.setLayout(new GridBagLayout());
 	    GridBagConstraints gbc = new GridBagConstraints();
-	    gbc.insets = new Insets(10, 10, 10, 10); 
+	    gbc.insets = new Insets(10, 10, 10, 10);
 	    gbc.fill = GridBagConstraints.HORIZONTAL;
 
 	    JLabel lblPort = new JLabel("Port Server:");
 	    lblPort.setFont(new Font("Times New Roman", Font.BOLD, 14));
 	    gbc.gridx = 0;
 	    gbc.gridy = 0;
-	    gbc.weightx = 0; 
+	    gbc.weightx = 0;
 	    this.add(lblPort, gbc);
 
 	    txtPort = new JTextField("1234");
@@ -62,40 +62,40 @@ public class JPanelServer extends JPanel {
 	    txtPort.putClientProperty("FlatClientProperties.placeholderText", "Ví dụ: 8080");
 	    gbc.gridx = 1;
 	    gbc.gridy = 0;
-	    gbc.weightx = 1.0; 
+	    gbc.weightx = 1.0;
 	    this.add(txtPort, gbc);
 
 	    btnStart = new JButton("Mở kết nối Server");
 	    btnStart.setPreferredSize(new Dimension(150, 35));
-	    btnStart.setBackground(new Color(46, 204, 113)); 
+	    btnStart.setBackground(new Color(46, 204, 113));
 	    btnStart.setForeground(Color.WHITE);
 	    btnStart.setFont(new Font("Times New Roman", Font.BOLD, 14));
 	    btnStart.setCursor(new Cursor(Cursor.HAND_CURSOR));
 	    btnStart.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_ROUND_RECT);
 	    btnStart.putClientProperty(FlatClientProperties.STYLE, "arc: 999");
-	    
+
 	    gbc.gridx = 2;
 	    gbc.gridy = 0;
 	    gbc.weightx = 0;
 	    this.add(btnStart, gbc);
 
 	    txtLog = new JTextArea();
-	    txtLog.setEditable(false); 
-	    txtLog.setFont(new Font("Times New Roman", Font.PLAIN, 15)); 
-	    txtLog.setLineWrap(true); 
+	    txtLog.setEditable(false);
+	    txtLog.setFont(new Font("Times New Roman", Font.PLAIN, 15));
+	    txtLog.setLineWrap(true);
 	    txtLog.setWrapStyleWord(true);
-	    
+
 	    JScrollPane scrollPane = new JScrollPane(txtLog);
 	    scrollPane.setBorder(new TitledBorder(new LineBorder(Color.LIGHT_GRAY), "Nhật ký hệ thống (Logs)"));
 	    scrollPane.putClientProperty("FlatClientProperties.arc", 15);
 
 	    gbc.gridx = 0;
 	    gbc.gridy = 1;
-	    gbc.gridwidth = 3; 
-	    gbc.weighty = 1.0; 
-	    gbc.fill = GridBagConstraints.BOTH; 
+	    gbc.gridwidth = 3;
+	    gbc.weighty = 1.0;
+	    gbc.fill = GridBagConstraints.BOTH;
 	    this.add(scrollPane, gbc);
-	    
+
 	    JPanel chatPanel = new JPanel(new BorderLayout(10, 0));
 	    chatPanel.setBackground(new Color(250, 250, 249));
 
@@ -112,7 +112,7 @@ public class JPanelServer extends JPanel {
 	    btnSend.setPreferredSize(new Dimension(100, 40));
 	    btnSend.setCursor(new Cursor(Cursor.HAND_CURSOR));
 	    btnSend.putClientProperty(FlatClientProperties.STYLE, "arc: 15");
-	    
+
 	    txtMessage.setEnabled(false);
 	    btnSend.setEnabled(false);
 
@@ -122,30 +122,30 @@ public class JPanelServer extends JPanel {
 	    gbc.gridx = 0;
 	    gbc.gridy = 2;
 	    gbc.gridwidth = 3;
-	    gbc.weighty = 0; 
+	    gbc.weighty = 0;
 	    gbc.fill = GridBagConstraints.HORIZONTAL;
 	    this.add(chatPanel, gbc);
-	    
+
 	    List<PrintWriter> clientWriters = new CopyOnWriteArrayList<>();
-	    
+
 	    ActionListener sendAction = e -> {
 	        String msg = txtMessage.getText().trim();
 	        if (!msg.isEmpty()) {
 	            txtLog.append("Server: " + msg + "\n");
 	            txtMessage.setText("");
-	    
+
 	            for (PrintWriter writer : clientWriters) {
 	                writer.println("Server: " + msg);
 	            }
 	        }
 	    };
 	    btnSend.addActionListener(sendAction);
-	    txtMessage.addActionListener(sendAction); 
+	    txtMessage.addActionListener(sendAction);
 
 	    btnStart.addActionListener(e -> {
 	        try {
 	            int port = Integer.parseInt(txtPort.getText().trim());
-	            
+
 	            txtLog.append("Đang khởi động Server tại Port " + port + "...\n");
 	            btnStart.setEnabled(false);
 	            txtPort.setEditable(false);
@@ -153,7 +153,7 @@ public class JPanelServer extends JPanel {
 	            Thread serverThread = new Thread(() -> {
 	                try {
 	                    ServerSocket serverSocket = new ServerSocket(port);
-	                    
+
 	                    SwingUtilities.invokeLater(() -> {
 	                        txtLog.append("Server đang lắng nghe. Chờ Client kết nối...\n");
 	                        txtMessage.setEnabled(true);
@@ -163,8 +163,8 @@ public class JPanelServer extends JPanel {
 	                    while (true) {
 	                        Socket clientSocket = serverSocket.accept();
 	                        String clientIP = clientSocket.getInetAddress().getHostAddress();
-	                        
-	                        SwingUtilities.invokeLater(() -> 
+
+	                        SwingUtilities.invokeLater(() ->
 	                            txtLog.append("Client đã kết nối từ IP: " + clientIP + "\n")
 	                        );
 
@@ -177,12 +177,12 @@ public class JPanelServer extends JPanel {
 	                                String messageFromClient;
 	                                while ((messageFromClient = in.readLine()) != null) {
 	                                    String finalMsg = messageFromClient;
-	                                    SwingUtilities.invokeLater(() -> 
+	                                    SwingUtilities.invokeLater(() ->
 	                                        txtLog.append("Client (" + clientIP + "): " + finalMsg + "\n")
 	                                    );
 	                                }
 	                            } catch (Exception ex) {
-	                                SwingUtilities.invokeLater(() -> 
+	                                SwingUtilities.invokeLater(() ->
 	                                    txtLog.append("Client " + clientIP + " đã ngắt kết nối.\n")
 	                                );
 	                            } finally {
@@ -190,7 +190,7 @@ public class JPanelServer extends JPanel {
 	                            }
 	                        }).start();
 	                    }
-	                    
+
 	                } catch (Exception ex) {
 	                    SwingUtilities.invokeLater(() -> {
 	                        txtLog.append("Lỗi Server: " + ex.getMessage() + "\n");
@@ -199,14 +199,14 @@ public class JPanelServer extends JPanel {
 	                    });
 	                }
 	            });
-	            
+
 	            serverThread.start();
-	            
+
 	        } catch (NumberFormatException ex) {
 	            txtLog.append("Vui lòng nhập Port là một số hợp lệ!\n");
 	        }
 	    });
-	    
+
 	}
 
 }

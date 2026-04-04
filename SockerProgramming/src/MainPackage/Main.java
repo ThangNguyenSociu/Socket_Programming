@@ -1,18 +1,29 @@
 package MainPackage;
 
-import TCP.MainTCP;
-import UDP.UDPMenu;
-import com.formdev.flatlaf.FlatClientProperties;
-import com.formdev.flatlaf.FlatLightLaf;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.io.File;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
-import java.io.File;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
-import javax.swing.*;
+
+import com.formdev.flatlaf.FlatClientProperties;
+import com.formdev.flatlaf.FlatLightLaf;
+
+import TCP.MainTCP;
+import UDP.UDPMenu;
 
 public class Main extends JFrame {
 
@@ -28,7 +39,7 @@ public class Main extends JFrame {
 	}
 
 	private void TrangChu() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setTitle("Trang chủ");
 		setBounds(150, 150, 650, 250);
 		setLocationRelativeTo(null);

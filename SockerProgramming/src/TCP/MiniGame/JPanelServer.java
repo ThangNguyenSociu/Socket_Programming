@@ -1,10 +1,29 @@
 package TCP.MiniGame;
 
-import java.awt.*;
-import java.io.*;
-import java.net.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Random;
-import javax.swing.*;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+
 import com.formdev.flatlaf.FlatClientProperties;
 
 public class JPanelServer extends JPanel {
@@ -22,26 +41,26 @@ public class JPanelServer extends JPanel {
 
     private void Server() {
         this.setLayout(new BorderLayout(0, 20));
-        this.setBackground(new Color(245, 247, 250)); 
+        this.setBackground(new Color(245, 247, 250));
         this.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         topPanel.setOpaque(false);
-        
+
         JLabel lblPort = new JLabel("Port:");
         lblPort.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        
+
         txtPort = new JTextField("1234", 10);
         txtPort.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        txtPort.putClientProperty(FlatClientProperties.STYLE, "arc: 15; margin: 4,10,4,10"); 
-        
+        txtPort.putClientProperty(FlatClientProperties.STYLE, "arc: 15; margin: 4,10,4,10");
+
         btnStart = new JButton("Mở Sòng (Start Server)");
-        btnStart.setBackground(new Color(46, 204, 113)); 
+        btnStart.setBackground(new Color(46, 204, 113));
         btnStart.setForeground(Color.WHITE);
         btnStart.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnStart.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnStart.putClientProperty(FlatClientProperties.STYLE, "arc: 15; margin: 4,20,4,20");
-        
+
         topPanel.add(lblPort);
         topPanel.add(txtPort);
         topPanel.add(btnStart);
@@ -51,7 +70,7 @@ public class JPanelServer extends JPanel {
         centerPanel.setBackground(Color.WHITE);
         centerPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(220, 220, 220), 1, true),
-            BorderFactory.createEmptyBorder(25, 30, 30, 30) 
+            BorderFactory.createEmptyBorder(25, 30, 30, 30)
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -61,7 +80,7 @@ public class JPanelServer extends JPanel {
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
         JLabel lblTitle = new JLabel("BÀN LẮC TÀI XỈU", SwingConstants.CENTER);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblTitle.setForeground(new Color(44, 62, 80)); 
+        lblTitle.setForeground(new Color(44, 62, 80));
         centerPanel.add(lblTitle, gbc);
 
         gbc.gridy = 1; gbc.gridwidth = 1; gbc.weightx = 0.4;
@@ -73,30 +92,30 @@ public class JPanelServer extends JPanel {
         gbc.gridx = 1; gbc.weightx = 0.6;
         txtClientChoice = new JTextField(15);
         txtClientChoice.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        txtClientChoice.setForeground(new Color(231, 76, 60)); 
-        txtClientChoice.setHorizontalAlignment(JTextField.CENTER);
+        txtClientChoice.setForeground(new Color(231, 76, 60));
+        txtClientChoice.setHorizontalAlignment(SwingConstants.CENTER);
         txtClientChoice.setEditable(false);
-        txtClientChoice.putClientProperty(FlatClientProperties.STYLE, "arc: 15; margin: 6,10,6,10; background: #fdf2e9"); 
+        txtClientChoice.putClientProperty(FlatClientProperties.STYLE, "arc: 15; margin: 6,10,6,10; background: #fdf2e9");
         centerPanel.add(txtClientChoice, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
         btnRoll = new JButton("LẮC XÚC XẮC");
         btnRoll.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        btnRoll.setBackground(new Color(243, 156, 18)); 
+        btnRoll.setBackground(new Color(243, 156, 18));
         btnRoll.setForeground(Color.WHITE);
         btnRoll.setPreferredSize(new Dimension(300, 75));
         btnRoll.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnRoll.setEnabled(false);
-        btnRoll.putClientProperty(FlatClientProperties.STYLE, "arc: 25"); 
+        btnRoll.putClientProperty(FlatClientProperties.STYLE, "arc: 25");
         centerPanel.add(btnRoll, gbc);
 
         gbc.gridy = 3;
         txtResult = new JTextField("Đang chờ người chơi vào bàn...", 30);
         txtResult.setFont(new Font("Segoe UI", Font.BOLD, 16));
         txtResult.setEditable(false);
-        txtResult.setHorizontalAlignment(JTextField.CENTER);
+        txtResult.setHorizontalAlignment(SwingConstants.CENTER);
         txtResult.setForeground(new Color(127, 140, 141));
-        txtResult.putClientProperty(FlatClientProperties.STYLE, 
+        txtResult.putClientProperty(FlatClientProperties.STYLE,
             "arc: 20; borderWidth: 0; background: #ecf0f1; margin: 10,10,10,10");
         txtResult.setPreferredSize(new Dimension(350, 55));
         centerPanel.add(txtResult, gbc);
@@ -121,14 +140,14 @@ public class JPanelServer extends JPanel {
                 serverSocket = new ServerSocket(port);
                 clientSocket = serverSocket.accept();
                 SwingUtilities.invokeLater(() -> btnStart.setText("Người chơi đã vào bàn!"));
-                
+
                 dis = new DataInputStream(clientSocket.getInputStream());
                 dos = new DataOutputStream(clientSocket.getOutputStream());
 
                 while (true) {
                     String type = dis.readUTF();
                     String choice = dis.readUTF();
-                    
+
                     if ("TAIXIU".equals(type)) {
                         SwingUtilities.invokeLater(() -> {
                             txtClientChoice.setText(choice);
@@ -144,7 +163,9 @@ public class JPanelServer extends JPanel {
     }
 
     private void rollDice() {
-        if (dos == null) return;
+        if (dos == null) {
+			return;
+		}
         new Thread(() -> {
             try {
                 String clientChoice = txtClientChoice.getText();
@@ -153,16 +174,16 @@ public class JPanelServer extends JPanel {
                 int d2 = rand.nextInt(6) + 1;
                 int d3 = rand.nextInt(6) + 1;
                 int sum = d1 + d2 + d3;
-                
+
                 String realResult = (sum >= 11) ? "TÀI" : "XỈU";
                 String winOrLose = clientChoice.equals(realResult) ? "CLIENT THẮNG!" : "CLIENT THUA!";
                 String finalMsg = String.format("[%d-%d-%d] Tổng %d: %s -> %s", d1, d2, d3, sum, realResult, winOrLose);
-                
+
                 SwingUtilities.invokeLater(() -> {
                     txtResult.setText(finalMsg);
-                    btnRoll.setEnabled(false); 
+                    btnRoll.setEnabled(false);
                 });
-                
+
                 dos.writeUTF("TAIXIU");
                 dos.writeUTF(finalMsg);
                 dos.flush();

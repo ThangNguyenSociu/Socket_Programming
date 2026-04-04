@@ -1,7 +1,17 @@
 package TCP.Calculate.RowServer;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 public class JPanelRow2 extends JPanel {
     private static final long serialVersionUID = 1L;
@@ -9,11 +19,11 @@ public class JPanelRow2 extends JPanel {
     private JTextField txtUSD;
     private JTextField txtResult;
     private JButton send;
-    
+
     public JPanelRow2() {
         Row();
     }
-    
+
     private void Row() {
         labelUSD = new JLabel("Nhập USD:");
         txtUSD = new JTextField(25);
@@ -23,15 +33,15 @@ public class JPanelRow2 extends JPanel {
         labelUSD.setFont(new Font("Segoe UI", Font.BOLD, 18));
         txtUSD.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         txtResult.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        
+
         txtUSD.setPreferredSize(new Dimension(300, 40));
         txtUSD.setMaximumSize(new Dimension(400, 40));
         txtUSD.putClientProperty("JComponent.roundRect", true);
-        
+
         txtResult.setPreferredSize(new Dimension(300, 40));
         txtResult.setMaximumSize(new Dimension(400, 40));
         txtResult.putClientProperty("JComponent.roundRect", true);
-      
+
         send.setPreferredSize(new Dimension(120, 40));
         send.putClientProperty("JButton.buttonType", "roundRect");
         send.setBackground(new Color(0, 123, 255));
@@ -48,7 +58,7 @@ public class JPanelRow2 extends JPanel {
         this.add(Box.createRigidArea(new Dimension(15, 0)));
         this.add(send);
     }
-    
+
     public JButton getBtnSend() { return send; }
     public String getUsdText() { return txtUSD.getText().trim(); }
     public void setUsdText(String text) { this.txtUSD.setText(text); }

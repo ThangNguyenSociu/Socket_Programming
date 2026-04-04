@@ -10,7 +10,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
-import TCP.Calculate.RowClient.*;
+import TCP.Calculate.RowClient.JPanelRow1;
+import TCP.Calculate.RowClient.JPanelRow2;
+import TCP.Calculate.RowClient.JPanelRow3;
+import TCP.Calculate.RowClient.JPanelRowConnect;
 
 
 public class JPanelClient extends JPanel {
@@ -24,59 +27,59 @@ public class JPanelClient extends JPanel {
 	private DataOutputStream dos;
 	private DataInputStream dis;
 	private JPanelRowConnect rowConnect;
-	
+
 	public JPanelClient() {
 		Client();
 	}
-	
+
 	private void Client() {
 		this.setLayout(new GridLayout(4, 1));
-        
+
 		rowConnect = new JPanelRowConnect();
-        this.add(rowConnect); 
-		
+        this.add(rowConnect);
+
 		row1 = new JPanelRow1();
 		row1.setBackground(bgColor);
-        this.add(row1); 
-        
+        this.add(row1);
+
         row2 = new JPanelRow2();
         row2.setBackground(whiteColor);
         this.add(row2);
-        
+
         row3 = new JPanelRow3();
 		row3.setBackground(bgColor);
         this.add(row3);
-        
+
         setupEvents();
 	}
-	
+
 	private void setupEvents() {
-		
+
 		rowConnect.getBtnConnect().addActionListener(e -> {
-	        connectToServer(); 
+	        connectToServer();
 	    });
-	    
+
 	    row1.getBtnSend().addActionListener(e -> {
-	        
+
 	        String dataToSend = row1.getPrefixText();
-	        
+
 	        if (dataToSend.isEmpty()) {
 	            JOptionPane.showMessageDialog(this, "Vui lòng nhập biểu thức Prefix!");
 	            return;
 	        }
-	        
+
 	        sendDataToServer("PREFIX", dataToSend);
 	    });
-	    
+
 	    row2.getBtnSend().addActionListener(e -> {
             String dataToSend = row2.getUsdText();
             if (dataToSend.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Vui lòng nhập số USD!");
                 return;
             }
-            sendDataToServer("USD", dataToSend); 
+            sendDataToServer("USD", dataToSend);
         });
-	    
+
 	    row3.getBtnSend().addActionListener(e -> {
 	        String dataToSend = row3.getStringText();
 	        if (dataToSend.isEmpty()) {
@@ -86,7 +89,7 @@ public class JPanelClient extends JPanel {
 	        sendDataToServer("REVERSE", dataToSend);
 	    });
 	}
-	
+
 	private void connectToServer() {
 	    String ip = rowConnect.getIP();
 	    String portStr = rowConnect.getPort();
@@ -103,7 +106,7 @@ public class JPanelClient extends JPanel {
 	        try {
 	            int port = Integer.parseInt(portStr);
 	            Socket socket = new Socket(ip, port);
-	            
+
 	            dos = new DataOutputStream(socket.getOutputStream());
 	            dis = new DataInputStream(socket.getInputStream());
 
@@ -114,10 +117,10 @@ public class JPanelClient extends JPanel {
 
 	            while (true) {
 	            	String type = dis.readUTF();
-	                String result = dis.readUTF(); 
+	                String result = dis.readUTF();
 	                SwingUtilities.invokeLater(() -> {
 	                    if ("PREFIX".equals(type)) {
-	                        row1.setPrefixText(result); 
+	                        row1.setPrefixText(result);
 	                    } else if ("USD".equals(type)) {
 	                        row2.setUsdText(result);
 	                    } else if ("REVERSE".equals(type)) {
@@ -135,7 +138,7 @@ public class JPanelClient extends JPanel {
 	        }
 	    }).start();
 	}
-	
+
 	private void sendDataToServer(String type, String data) {
 	    if (dos == null) {
 	        JOptionPane.showMessageDialog(this, "Bạn chưa kết nối tới Server!");
@@ -144,14 +147,14 @@ public class JPanelClient extends JPanel {
 
 	    new Thread(() -> {
 	        try {
-	        	dos.writeUTF(type); 
+	        	dos.writeUTF(type);
 	            dos.writeUTF(data);
 	            dos.flush();
-	            
+
 	            SwingUtilities.invokeLater(() -> {
 	                row1.clearTextField();
 	            });
-	            
+
 	        } catch (IOException ex) {
 	            SwingUtilities.invokeLater(() -> {
 	                JOptionPane.showMessageDialog(this, "Lỗi mất kết nối: " + ex.getMessage());
