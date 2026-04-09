@@ -1,7 +1,17 @@
 package TCP.Calculate.RowServer;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 public class JPanelRow3 extends JPanel {
     private static final long serialVersionUID = 1L;
@@ -9,11 +19,11 @@ public class JPanelRow3 extends JPanel {
     private JTextField txtString;
     private JTextField txtResult;
     private JButton send;
-    
+
     public JPanelRow3() {
         Row();
     }
-    
+
     private void Row() {
         labelString = new JLabel("Nhập Chuỗi:");
         txtString = new JTextField(25);
@@ -23,18 +33,18 @@ public class JPanelRow3 extends JPanel {
         labelString.setFont(new Font("Segoe UI", Font.BOLD, 18));
         txtString.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         txtResult.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        
+
         txtString.setPreferredSize(new Dimension(300, 40));
         txtString.setMaximumSize(new Dimension(400, 40));
         txtString.putClientProperty("JComponent.roundRect", true);
-        
+
         txtResult.setPreferredSize(new Dimension(300, 40));
         txtResult.setMaximumSize(new Dimension(400, 40));
         txtResult.putClientProperty("JComponent.roundRect", true);
-      
+
         send.setPreferredSize(new Dimension(120, 40));
         send.putClientProperty("JButton.buttonType", "roundRect");
-        send.setBackground(new Color(0, 123, 255)); 
+        send.setBackground(new Color(0, 123, 255));
         send.setForeground(Color.WHITE);
         send.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
@@ -48,7 +58,7 @@ public class JPanelRow3 extends JPanel {
         this.add(Box.createRigidArea(new Dimension(15, 0)));
         this.add(send);
     }
-    
+
     public JButton getBtnSend() { return send; }
     public String getStringText() { return txtString.getText().trim(); }
     public void setStringText(String text) { this.txtString.setText(text); }

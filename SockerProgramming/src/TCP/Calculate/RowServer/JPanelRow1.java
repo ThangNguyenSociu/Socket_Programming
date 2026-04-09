@@ -19,11 +19,11 @@ public class JPanelRow1 extends JPanel {
 	private JTextField txtPrefix;
 	private JTextField txtResult;
 	private JButton send;
-	
+
 	public JPanelRow1() {
 		Row();
 	}
-	
+
 	private void Row() {
 		labelPrefix = new JLabel("Nhập Prefix:");
 	    txtPrefix = new JTextField(25);
@@ -33,18 +33,18 @@ public class JPanelRow1 extends JPanel {
 	    labelPrefix.setFont(new Font("Segoe UI", Font.BOLD, 18));
 	    txtPrefix.setFont(new Font("Segoe UI", Font.PLAIN, 16));
 	    txtResult.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-	    
+
 	    txtPrefix.setPreferredSize(new Dimension(300, 40));
 	    txtPrefix.setMaximumSize(new Dimension(400, 40));
 	    txtPrefix.putClientProperty("JComponent.roundRect", true);
 	    txtPrefix.putClientProperty("JTextField.showClearButton", true);
-	    
-	    
+
+
 	    txtResult.setPreferredSize(new Dimension(300, 40));
 	    txtResult.setMaximumSize(new Dimension(400, 40));
 	    txtResult.putClientProperty("JComponent.roundRect", true);
 	    txtResult.putClientProperty("JTextField.showClearButton", true);
-	  
+
 	    send.setPreferredSize(new Dimension(100, 40));
 	    send.putClientProperty("JButton.buttonType", "roundRect");
 	    send.setBackground(new Color(0, 123, 255));
@@ -61,24 +61,24 @@ public class JPanelRow1 extends JPanel {
 	    this.add(Box.createRigidArea(new Dimension(15, 0)));
 	    this.add(send);
     }
-    
+
     public JButton getBtnSend() {
         return send;
     }
-    
+
     public String getPrefixText() {
         return txtPrefix.getText().trim();
     }
-    
+
     public void setPrefixTextResult(String text) {
     		this.txtResult.setText(text);
     }
-    
+
     public void clearTextField() {
         txtPrefix.setText("");
         txtPrefix.requestFocus();
     }
-    
+
     public void setPrefixText(String text) {
         this.txtPrefix.setText(text);
     }

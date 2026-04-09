@@ -1,10 +1,8 @@
 package TCP.Calculate.RowClient;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 
 import javax.swing.Box;
@@ -20,24 +18,24 @@ public class JPanelRow1 extends JPanel {
 	private JLabel labelPrefix;
 	private JTextField txtPrefix;
 	private JButton send;
-	
+
 	public JPanelRow1() {
 		Row();
 	}
-	
+
 	public static void main(String[] args) {
 	    try {
-	        com.formdev.flatlaf.FlatLightLaf.setup(); 
+	        com.formdev.flatlaf.FlatLightLaf.setup();
 	        javax.swing.UIManager.put("Button.arc", 20);
 	        javax.swing.UIManager.put("Component.arc", 20);
 	        javax.swing.UIManager.put("TextComponent.arc", 20);
 	        javax.swing.UIManager.put("JTextField.showClearButton", true);
-	        
+
 	    } catch (Exception ex) {
 	        System.err.println("Không thể khởi động FlatLaf");
 	    }
 	}
-	
+
 	private void Row() {
 		labelPrefix = new JLabel("Nhập Prefix:");
 	    txtPrefix = new JTextField(25);
@@ -45,7 +43,7 @@ public class JPanelRow1 extends JPanel {
 
 	    labelPrefix.setFont(new Font("Segoe UI", Font.BOLD, 18));
 	    txtPrefix.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-	    
+
 	    txtPrefix.setPreferredSize(new Dimension(300, 40));
 	    txtPrefix.setMaximumSize(new Dimension(400, 40));
 	    txtPrefix.putClientProperty("JComponent.roundRect", true);
@@ -66,19 +64,19 @@ public class JPanelRow1 extends JPanel {
 	    this.add(Box.createRigidArea(new Dimension(15, 0)));
 	    this.add(send);
     }
-    
+
     public JButton getBtnSend() {
         return send;
     }
-    
+
     public String getPrefixText() {
         return txtPrefix.getText().trim();
     }
-    
+
     public void setPrefixText(String text) {
         this.txtPrefix.setText(text);
     }
-    
+
     public void clearTextField() {
         txtPrefix.setText("");
         txtPrefix.requestFocus();
