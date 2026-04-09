@@ -35,7 +35,9 @@ import javax.swing.SwingUtilities;
 public class UDPWhiteboardPanel extends JPanel {
     private static final int PORT = 9876;
     private DatagramSocket socket;
-    private InetAddress broadcastAddress;
+    private java.util.List<InetAddress> broadcastAddresses = new java.util.ArrayList<>();
+    private java.util.List<String> myLocalIPs = new java.util.ArrayList<>();
+    private String lanPrefix = "";
 
     private BufferedImage canvas;
     private Graphics2D g2;
@@ -126,38 +128,54 @@ public class UDPWhiteboardPanel extends JPanel {
             socket.bind(new InetSocketAddress(PORT));
             socket.setBroadcast(true);
 
-            // Tìm địa chỉ Broadcast KHÔNG phải máy ảo
-            broadcastAddress = discoverBroadcastAddress();
+            discoverBroadcastAddresses();
         } catch (Exception e) {
             System.err.println("Lỗi mạng Whiteboard: " + e.getMessage());
         }
     }
 
-    private InetAddress discoverBroadcastAddress() {
+    private void discoverBroadcastAddresses() {
         try {
+            broadcastAddresses.clear();
+            myLocalIPs.clear();
+            lanPrefix = "";
+            broadcastAddresses.add(InetAddress.getByName("255.255.255.255"));
             NetworkInterface fallbackNI = null;
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while (interfaces.hasMoreElements()) {
                 NetworkInterface ni = interfaces.nextElement();
                 String name = ni.getDisplayName().toLowerCase();
-                if (ni.isLoopback() || !ni.isUp()) continue;
-                if (fallbackNI == null) fallbackNI = ni;
+                String n = ni.getName().toLowerCase();
+                System.out.println("[WB-DEBUG-NET] Quét Interface: " + ni.getName() + " (" + ni.getDisplayName() + ") | UP: " + ni.isUp());
+                if (ni.isLoopback() || !ni.isUp())
+                    continue;
+                if (fallbackNI == null)
+                    fallbackNI = ni;
 
-                if (!name.contains("vmware") && !name.contains("virtual") && !name.contains("vbox") && !name.contains("host-only") && !name.contains("pseudo")) {
+                // LOẠI BỎ MÔI TRƯỜNG ẢO & VPN (Cập nhật: Radmin, Hamachi, ZeroTier)
+                if (!name.contains("vmware") && !n.contains("vmware") && !name.contains("virtual") && !n.contains("virtual") && !name.contains("vbox") && !n.contains("vbox")
+                        && !name.contains("radmin") && !n.contains("radmin") && !name.contains("hamachi") && !n.contains("hamachi") && !name.contains("zerotier") && !n.contains("zerotier")
+                        && !name.contains("tunnel") && !n.contains("tunnel") && !name.contains("teredo") && !n.contains("teredo") && !name.contains("pseudo") && !n.contains("pseudo")) {
                     for (InterfaceAddress addr : ni.getInterfaceAddresses()) {
+                        if (addr.getAddress() instanceof java.net.Inet4Address) {
+                            String local = addr.getAddress().getHostAddress();
+                            myLocalIPs.add(local);
+                            if (!local.equals("127.0.0.1") && lanPrefix.isEmpty() && !local.startsWith("169.254")) {
+                                int lastDot = local.lastIndexOf('.');
+                                if (lastDot > 0) lanPrefix = local.substring(0, lastDot);
+                            }
+                        }
+
                         InetAddress broad = addr.getBroadcast();
-                        if (broad != null) return broad;
+                        if (broad != null && !broadcastAddresses.contains(broad)) {
+                            broadcastAddresses.add(broad);
+                            System.out.println("  -> [WB] Đăng ký Broadcast IP: " + broad.getHostAddress());
+                        }
                     }
                 }
             }
-            if (fallbackNI != null) {
-                for (InterfaceAddress addr : fallbackNI.getInterfaceAddresses()) {
-                    InetAddress broad = addr.getBroadcast();
-                    if (broad != null) return broad;
-                }
-            }
-        } catch (Exception e) { }
-        try { return InetAddress.getByName("255.255.255.255"); } catch (Exception e) { return null; }
+        } catch (Exception e) {
+        }
     }
 
     private void setupInteraction() {
@@ -214,8 +232,28 @@ public class UDPWhiteboardPanel extends JPanel {
     private void sendUDP(String message) {
         try {
             byte[] data = message.getBytes();
-            DatagramPacket packet = new DatagramPacket(data, data.length, broadcastAddress, PORT);
-            socket.send(packet);
+
+            // 1. Unicast Sweep xuyên AP Isolation
+            if (!lanPrefix.isEmpty()) {
+                for (int i = 1; i <= 254; i++) {
+                    String targetIP = lanPrefix + "." + i;
+                    if (myLocalIPs.contains(targetIP)) continue;
+                    try {
+                        socket.send(new DatagramPacket(data, data.length, InetAddress.getByName(targetIP), PORT));
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            // 2. Broadcast quét vớt
+            for (InetAddress addr : broadcastAddresses) {
+                try {
+                    DatagramPacket packet = new DatagramPacket(data, data.length, addr, PORT);
+                    socket.send(packet);
+                    System.out.println("[WB-DEBUG-SEND] Node gửi dữ liệu tới: " + addr.getHostAddress());
+                } catch (Exception ex) {
+                    System.out.println("[WB-DEBUG-SEND] Lỗi gửi tới " + addr.getHostAddress() + ": " + ex.getMessage());
+                }
+            }
         } catch (Exception e) {
         }
     }
@@ -228,7 +266,11 @@ public class UDPWhiteboardPanel extends JPanel {
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     if (socket != null && !socket.isClosed()) {
                         socket.receive(packet);
+                        String senderIP = packet.getAddress().getHostAddress();
+                        if (myLocalIPs.contains(senderIP)) continue;
+
                         String msg = new String(packet.getData(), 0, packet.getLength());
+                        System.out.println("[WB-DEBUG-RECV] Nhận dữ liệu từ: " + senderIP);
                         processMessage(msg);
                     }
                 } catch (Exception e) {
