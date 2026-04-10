@@ -18,6 +18,9 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketTimeoutException;
 import java.util.Enumeration;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -43,10 +46,15 @@ public class UDPReliableFilePanel extends JPanel {
     private DatagramSocket socket;
     private String physicalIP = "127.0.0.1";
 
-    private JTextField txtDestIP, txtDestPort, txtMyPort;
+    private JTextField txtDestIP, txtDestPort;
     private JProgressBar progress;
     private JTextArea logArea;
-    private JButton btnSend;
+    private JButton btnSend, btnConnect;
+    private JLabel lblStatus;
+
+    // Dispatcher Queues
+    private final BlockingQueue<String> ackQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<DatagramPacket> dataQueue = new LinkedBlockingQueue<>();
 
     public UDPReliableFilePanel() {
         setLayout(new BorderLayout(10, 10));
@@ -97,47 +105,86 @@ public class UDPReliableFilePanel extends JPanel {
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BoxLayout(topPanel, javax.swing.BoxLayout.Y_AXIS));
         topPanel.setOpaque(false);
+        topPanel.setBackground(Color.WHITE);
 
+        // Hàng thông tin IP cục bộ
         JPanel row0 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         row0.setOpaque(false);
-        JLabel lblInfo = new JLabel("IP WiFi/LAN: " + physicalIP);
+        JLabel lblInfo = new JLabel("● IP WiFi/LAN của bạn: " + physicalIP);
         lblInfo.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblInfo.setForeground(primaryColor);
         row0.add(lblInfo);
         topPanel.add(row0);
 
+        // Hàng cấu hình đích
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         row1.setOpaque(false);
-        row1.add(new JLabel("Đích IP:"));
+        row1.setBorder(new TitledBorder(null, "CẤU HÌNH ĐỐI TÁC", TitledBorder.LEFT, TitledBorder.TOP, new Font("Segoe UI", Font.BOLD, 12), primaryColor));
+        
+        row1.add(new JLabel("Địa chỉ IP:"));
         txtDestIP = new JTextField(physicalIP, 12);
+        txtDestIP.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         row1.add(txtDestIP);
-        row1.add(new JLabel("Port:"));
+        
+        row1.add(new JLabel("  Cổng (Port):"));
         txtDestPort = new JTextField(String.valueOf(PORT), 5);
+        txtDestPort.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         row1.add(txtDestPort);
         topPanel.add(row1);
 
-        btnSend = new JButton("CHỌN & GỬI FILE");
-        btnSend.setBackground(primaryColor);
-        btnSend.setForeground(Color.WHITE);
-        btnSend.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        // Hàng điều khiển
+        JPanel rowControl = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        rowControl.setOpaque(false);
 
-        JPanel rowSend = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        rowSend.add(btnSend);
-        topPanel.add(rowSend);
+        btnConnect = new JButton("THIẾT LẬP KẾT NỐI");
+        styleButton(btnConnect, new Color(46, 204, 113)); // Emerald Green
+
+        btnSend = new JButton("CHỌN & GỬI FILE");
+        styleButton(btnSend, primaryColor);
+        btnSend.setEnabled(false); // Chỉ bật sau khi connect thành công
+
+        rowControl.add(btnConnect);
+        rowControl.add(btnSend);
+        
+        lblStatus = new JLabel("Trạng thái: Chưa kết nối");
+        lblStatus.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+        rowControl.add(lblStatus);
+        
+        topPanel.add(rowControl);
 
         add(topPanel, BorderLayout.NORTH);
 
+        // Khu vực Log
         logArea = new JTextArea();
         logArea.setEditable(false);
-        logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        add(new JScrollPane(logArea), BorderLayout.CENTER);
+        logArea.setFont(new Font("Consolas", Font.PLAIN, 13));
+        logArea.setBackground(new Color(248, 249, 250));
+        logArea.setBorder(new EmptyBorder(5, 5, 5, 5));
+        
+        JScrollPane scrollLog = new JScrollPane(logArea);
+        scrollLog.setBorder(new TitledBorder("NHẬT KÝ HOẠT ĐỘNG"));
+        add(scrollLog, BorderLayout.CENTER);
 
+        // Progress bar
         progress = new JProgressBar(0, 100);
         progress.setStringPainted(true);
-        progress.setPreferredSize(new Dimension(0, 25));
+        progress.setPreferredSize(new Dimension(0, 30));
+        progress.setForeground(new Color(46, 204, 113));
+        progress.setFont(new Font("Segoe UI", Font.BOLD, 12));
         add(progress, BorderLayout.SOUTH);
 
+        // Listeners
+        btnConnect.addActionListener(e -> new Thread(this::connectToPeer).start());
         btnSend.addActionListener(e -> selectAndSendFile());
+    }
+
+    private void styleButton(JButton btn, Color color) {
+        btn.setBackground(color);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setPreferredSize(new Dimension(180, 40));
+        btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
     }
 
     private void startReceiver() {
@@ -148,21 +195,68 @@ public class UDPReliableFilePanel extends JPanel {
                     socket.setReuseAddress(true);
                     socket.bind(new InetSocketAddress(PORT));
                 }
-                log("Đang lắng nghe file tại cổng " + PORT + "...");
+                log("Hệ thống UDP sẵn sàng tại cổng " + PORT);
 
                 while (true) {
                     byte[] buf = new byte[CHUNK_SIZE + 100];
                     DatagramPacket p = new DatagramPacket(buf, buf.length);
+                    socket.setSoTimeout(0); 
                     socket.receive(p);
 
                     String msg = new String(p.getData(), 0, p.getLength());
-                    if (msg.startsWith("FILE_HEADER:")) {
-                        receiveFile(msg, p.getAddress(), p.getPort());
+                    
+                    if (msg.equals("CONN_REQ")) {
+                        log("Nhận yêu cầu kết nối từ " + p.getAddress().getHostAddress());
+                        sendACK("CONN_ACK", p.getAddress(), p.getPort());
+                    } 
+                    else if (msg.equals("CONN_ACK") || msg.startsWith("ACK_")) {
+                        ackQueue.offer(msg);
+                    } 
+                    else if (msg.startsWith("FILE_HEADER:")) {
+                        // Chạy receiveFile trên thread riêng để không block dispatcher
+                        new Thread(() -> receiveFile(msg, p.getAddress(), p.getPort())).start();
+                    } 
+                    else {
+                        // Đây là chunk dữ liệu
+                        byte[] data = new byte[p.getLength()];
+                        System.arraycopy(p.getData(), 0, data, 0, p.getLength());
+                        dataQueue.offer(new DatagramPacket(data, data.length, p.getAddress(), p.getPort()));
                     }
                 }
             } catch (Exception e) {
+                log("Receiver Loop dừng: " + e.getMessage());
             }
         }).start();
+    }
+
+    private void connectToPeer() {
+        try {
+            btnConnect.setEnabled(false);
+            lblStatus.setText("Trạng thái: Đang thử kết nối...");
+            InetAddress destAddr = InetAddress.getByName(txtDestIP.getText());
+            int destPort = Integer.parseInt(txtDestPort.getText());
+
+            log("Gửi yêu cầu kết nối tới " + destAddr.getHostAddress() + "...");
+            ackQueue.clear(); // Xóa ACKs cũ
+            sendPacket("CONN_REQ", destAddr, destPort);
+
+            if (waitForACK("CONN_ACK")) {
+                log("KẾT NỐI THÀNH CÔNG!");
+                lblStatus.setText("Trạng thái: Đã kết nối");
+                lblStatus.setForeground(new Color(46, 204, 113));
+                btnSend.setEnabled(true);
+                JOptionPane.showMessageDialog(this, "Kết nối với máy đối tác thành công! Bạn có thể gửi file ngay bây giờ.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                log("Kết nối thất bại. Không nhận được phản hồi.");
+                lblStatus.setText("Trạng thái: Lỗi kết nối");
+                lblStatus.setForeground(Color.RED);
+                JOptionPane.showMessageDialog(this, "Không thể kết nối với máy đối tác. Vui lòng kiểm tra IP/Port và đảm bảo ứng dụng đang chạy bên máy kia.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            log("Lỗi handshake: " + e.getMessage());
+        } finally {
+            btnConnect.setEnabled(true);
+        }
     }
 
     private void receiveFile(String header, InetAddress senderAddr, int senderPort) {
@@ -181,18 +275,36 @@ public class UDPReliableFilePanel extends JPanel {
             
             File file = new File(downloadDir, "received_" + fileName);
             try (FileOutputStream fos = new FileOutputStream(file)) {
-                for (int i = 0; i < totalChunks; i++) {
-                    byte[] buf = new byte[CHUNK_SIZE + 100];
-                    DatagramPacket p = new DatagramPacket(buf, buf.length);
-                    socket.receive(p);
+                int expectedChunk = 0;
+                dataQueue.clear(); // Xóa dữ liệu cũ nếu có
+                while (expectedChunk < totalChunks) {
+                    // Lấy chunk từ queue với timeout
+                    DatagramPacket p = dataQueue.poll(10, TimeUnit.SECONDS);
+                    if (p == null) {
+                        log("Lỗi: Quá thời gian chờ gói tin (Timeout).");
+                        break;
+                    }
 
-                    // Phân tích chunk kèm ID
-                    byte[] chunkContent = new byte[p.getLength()];
-                    System.arraycopy(p.getData(), 0, chunkContent, 0, p.getLength());
-                    fos.write(chunkContent);
+                    // Đọc ID từ 4 byte đầu
+                    int receivedChunkId = ((p.getData()[0] & 0xFF) << 24) |
+                                          ((p.getData()[1] & 0xFF) << 16) |
+                                          ((p.getData()[2] & 0xFF) << 8)  |
+                                          ((p.getData()[3] & 0xFF));
 
-                    sendACK("ACK_" + i, senderAddr, senderPort);
-                    updateProgress(i + 1, totalChunks);
+                    if (receivedChunkId == expectedChunk) {
+                        // Gói tin đúng thứ tự
+                        byte[] chunkContent = new byte[p.getLength() - 4];
+                        System.arraycopy(p.getData(), 4, chunkContent, 0, p.getLength() - 4);
+                        fos.write(chunkContent);
+                        
+                        sendACK("ACK_" + expectedChunk, senderAddr, senderPort);
+                        expectedChunk++;
+                        updateProgress(expectedChunk, totalChunks);
+                    } else if (receivedChunkId < expectedChunk) {
+                        // Gói tin cũ (do ACK trước đó bị mất), gửi lại ACK để sender biết
+                        log("Nhận lại Chunk cũ " + receivedChunkId + ", gửi lại ACK.");
+                        sendACK("ACK_" + receivedChunkId, senderAddr, senderPort);
+                    }
                 }
             }
             log("Đã nhận file xong: " + file.getAbsolutePath());
@@ -223,7 +335,6 @@ public class UDPReliableFilePanel extends JPanel {
             sendPacket("FILE_HEADER:" + file.getName() + ":" + fileSize + ":" + totalChunks, destAddr, destPort);
 
             // Chờ ACK của Header
-            socket.setSoTimeout(5000);
             if (!waitForACK("ACK_START")) {
                 log("Bên nhận không phản hồi Header.");
                 return;
@@ -234,13 +345,20 @@ public class UDPReliableFilePanel extends JPanel {
                 for (int i = 0; i < totalChunks; i++) {
                     int read = fis.read(chunk);
                     boolean delivered = false;
-                    while (!delivered) {
-                        sendPacketData(chunk, read, destAddr, destPort);
+                    int retry = 0;
+                    while (!delivered && retry < 10) {
+                        sendChunkWithID(i, chunk, read, destAddr, destPort);
 
-                        if (waitForACK("ACK_" + i))
+                        if (waitForACK("ACK_" + i)) {
                             delivered = true;
-                        else
-                            log("Gửi lại Chunk " + i + "...");
+                        } else {
+                            retry++;
+                            log("Gửi lại Chunk " + i + " (Lần " + retry + ")...");
+                        }
+                    }
+                    if (!delivered) {
+                        log("Lỗi: Không thể gửi Chunk " + i + " sau 10 lần thử.");
+                        return;
                     }
                     updateProgress(i + 1, totalChunks);
                 }
@@ -258,18 +376,26 @@ public class UDPReliableFilePanel extends JPanel {
         socket.send(new DatagramPacket(d, d.length, addr, port));
     }
 
-    private void sendPacketData(byte[] data, int len, InetAddress addr, int port) throws Exception {
-        socket.send(new DatagramPacket(data, len, addr, port));
+    private void sendChunkWithID(int id, byte[] data, int len, InetAddress addr, int port) throws Exception {
+        byte[] packetData = new byte[len + 4];
+        // Chèn ID vào 4 byte đầu
+        packetData[0] = (byte) ((id >> 24) & 0xFF);
+        packetData[1] = (byte) ((id >> 16) & 0xFF);
+        packetData[2] = (byte) ((id >> 8) & 0xFF);
+        packetData[3] = (byte) (id & 0xFF);
+        System.arraycopy(data, 0, packetData, 4, len);
+        socket.send(new DatagramPacket(packetData, packetData.length, addr, port));
     }
 
     private boolean waitForACK(String expected) {
         try {
-            byte[] b = new byte[100];
-            DatagramPacket p = new DatagramPacket(b, b.length);
-            socket.receive(p);
-            String ack = new String(p.getData(), 0, p.getLength());
-            return ack.equals(expected);
-        } catch (SocketTimeoutException e) {
+            // Đợi ACK trong 2.5 giây từ queue
+            long start = System.currentTimeMillis();
+            while (System.currentTimeMillis() - start < 2500) {
+                String ack = ackQueue.poll(500, TimeUnit.MILLISECONDS);
+                if (ack != null && ack.equals(expected)) return true;
+                // Nếu nhận được ACK không mong đợi (ví dụ của chunk cũ), tiếp tục đợi
+            }
             return false;
         } catch (Exception e) {
             return false;
