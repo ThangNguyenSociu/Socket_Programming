@@ -50,6 +50,8 @@ public class UDPMenu extends JFrame {
 	private UDPReliableFilePanel reliableFilePanel;
 	private UDPBroadcastChatPanel broadcastChatPanel;
 	private UDPScreenMirrorPanel mirrorPanel;
+	private UDPSystemMonitorPanel monitorPanel;
+	private UDPQuizPanel quizPanel;
 
 	private String physicalIP = "127.0.0.1";
 
@@ -114,6 +116,10 @@ public class UDPMenu extends JFrame {
 			broadcastChatPanel.cleanup();
 		if (mirrorPanel != null)
 			mirrorPanel.cleanup();
+		if (monitorPanel != null)
+			monitorPanel.cleanup();
+		if (quizPanel != null)
+			quizPanel.cleanup();
 	}
 
 	private void initUI() {
@@ -175,6 +181,8 @@ public class UDPMenu extends JFrame {
 		JButton btnWhite = createNavButton("Bảng Trắng Sync", "Đồng bộ nét vẽ thời gian thực");
 		JButton btnMirr = createNavButton("Trình Chiếu", "Chia sẻ màn hình tốc độ cao");
 		JButton btnFile = createNavButton("Truyền File", "Giao thức truyền dữ liệu tin cậy");
+		JButton btnSys = createNavButton("Giám sát Hệ thống", "Theo dõi CPU, RAM thời gian thực");
+		JButton btnQuiz = createNavButton("UDP Quiz Game", "Trắc nghiệm trúng thưởng Kahoot");
 
 		navArea.add(btnChat);
 		navArea.add(Box.createVerticalStrut(15));
@@ -183,6 +191,10 @@ public class UDPMenu extends JFrame {
 		navArea.add(btnMirr);
 		navArea.add(Box.createVerticalStrut(15));
 		navArea.add(btnFile);
+		navArea.add(Box.createVerticalStrut(15));
+		navArea.add(btnSys);
+		navArea.add(Box.createVerticalStrut(15));
+		navArea.add(btnQuiz);
 
 		sidebar.add(navArea, BorderLayout.CENTER);
 
@@ -220,11 +232,17 @@ public class UDPMenu extends JFrame {
 		contentArea.add(broadcastChatPanel, "BROADCAST");
 		mirrorPanel = new UDPScreenMirrorPanel();
 		contentArea.add(mirrorPanel, "MIRROR");
+		monitorPanel = new UDPSystemMonitorPanel();
+		contentArea.add(monitorPanel, "MONITOR");
+		quizPanel = new UDPQuizPanel();
+		contentArea.add(quizPanel, "QUIZ");
 
 		btnWhite.addActionListener(e -> cardLayout.show(contentArea, "WHITEBOARD"));
 		btnFile.addActionListener(e -> cardLayout.show(contentArea, "FILE_TRANSFER"));
 		btnChat.addActionListener(e -> cardLayout.show(contentArea, "BROADCAST"));
 		btnMirr.addActionListener(e -> cardLayout.show(contentArea, "MIRROR"));
+		btnSys.addActionListener(e -> cardLayout.show(contentArea, "MONITOR"));
+		btnQuiz.addActionListener(e -> cardLayout.show(contentArea, "QUIZ"));
 
 		mainPanel.add(sidebar, BorderLayout.WEST);
 		mainPanel.add(contentArea, BorderLayout.CENTER);
