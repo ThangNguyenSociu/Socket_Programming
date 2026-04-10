@@ -130,7 +130,8 @@ public class JPanelClient extends JPanel {
 	    gbc.weighty = 0;
 	    gbc.fill = GridBagConstraints.HORIZONTAL;
 	    this.add(chatPanel, gbc);
-
+	    
+	    
 	    final PrintWriter[] clientOut = {null};
 	    final Socket[] currentSocket = {null};
 

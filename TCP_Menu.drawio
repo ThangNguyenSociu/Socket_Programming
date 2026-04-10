@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Trang-1" id="f-OPT0tm8R2O3MNmxUfv">
+    <mxGraphModel dx="410" dy="291" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D8EAFC;" value="MiniGame" vertex="1">
+          <mxGeometry height="40" width="85" x="350" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-2" edge="1" parent="1" source="hSGBP6Ru_5ft5B2pyJAR-3" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="hSGBP6Ru_5ft5B2pyJAR-1" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="311" y="340" as="sourcePoint" />
+            <mxPoint x="311" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D8EAFC;strokeColor=#6c8ebf;" value="TCP" vertex="1">
+          <mxGeometry height="50" width="80" x="352.5" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-4" edge="1" parent="1" style="endArrow=none;dashed=1;html=1;rounded=0;exitX=0;exitY=1;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="435.0000000000001" y="270" as="sourcePoint" />
+            <mxPoint x="640" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Times New Roman;fontSize=11;" value="Trò chơi tài xỉu với 3 xúc sắc" vertex="1">
+          <mxGeometry height="15" width="210" x="430" y="252.5" as="geometry" />
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-6" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="370" y="315.5" as="sourcePoint" />
+            <mxPoint x="370" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-18" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D8EAFC;" value="Trò chơi Tài xỉu" vertex="1">
+          <mxGeometry height="20" width="160" x="390" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-27" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="390" y="314.71" as="sourcePoint" />
+            <mxPoint x="370" y="314.71" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-37" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D8EAFC;" value="Client" vertex="1">
+          <mxGeometry height="20" width="50" x="600" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-38" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D8EAFC;" value="Server" vertex="1">
+          <mxGeometry height="20" width="50" x="600" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-39" edge="1" parent="1" source="hSGBP6Ru_5ft5B2pyJAR-18" style="endArrow=none;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="560" y="315" as="sourcePoint" />
+            <mxPoint x="580" y="315" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-41" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;edgeStyle=orthogonalEdgeStyle;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="297" />
+            </Array>
+            <mxPoint x="580" y="315.5" as="sourcePoint" />
+            <mxPoint x="600" y="297" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hSGBP6Ru_5ft5B2pyJAR-42" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="332" />
+            </Array>
+            <mxPoint x="580" y="315" as="sourcePoint" />
+            <mxPoint x="600" y="332" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
