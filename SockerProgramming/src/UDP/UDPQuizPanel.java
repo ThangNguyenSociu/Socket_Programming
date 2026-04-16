@@ -303,7 +303,11 @@ public class UDPQuizPanel extends JPanel {
 
     private void sendQuestion(int idx) {
         currentIdx = idx;
-        hostTableModel.setRowCount(0); // Xóa kết quả cũ
+        // Thêm dòng ngăn cách để dễ theo dõi thay vì xoá sạch bảng
+        SwingUtilities.invokeLater(() -> {
+            hostTableModel.addRow(new Object[]{"ID: " + (idx + 1), "=== BẮT ĐẦU CÂU HỎI MỚI ===", "===", "===", "==="});
+        });
+
         Question q = questions.get(idx);
         StringBuilder sb = new StringBuilder("QUIZ:");
         sb.append(idx).append("|").append(q.content);
@@ -322,11 +326,36 @@ public class UDPQuizPanel extends JPanel {
 
     private void broadcastResult() {
         if (currentIdx == -1) return;
-        String msg = "RESULT:" + currentIdx + ":" + questions.get(currentIdx).correctIdx;
-        byte[] data = msg.getBytes(StandardCharsets.UTF_8);
+        char correctChar = (char) ('A' + questions.get(currentIdx).correctIdx);
+        
+        // 1. Cập nhật bảng và gửi kết quả cá nhân hóa
+        for (int i = 0; i < hostTableModel.getRowCount(); i++) {
+            String ip = (String) hostTableModel.getValueAt(i, 0);
+            String ans = (String) hostTableModel.getValueAt(i, 2);
+            String status = (String) hostTableModel.getValueAt(i, 4);
+
+            if (status != null && status.equals("Chờ...")) {
+                boolean isCorrect = ans != null && ans.equals(String.valueOf(correctChar));
+                String resStr = isCorrect ? "ĐÚNG" : "SAI";
+                hostTableModel.setValueAt(resStr, i, 4);
+
+                // Gửi phản hồi riêng cho từng thí sinh (Dùng port đã lưu)
+                if (participantPorts.containsKey(ip)) {
+                    try {
+                        String msg = "RESULT:" + currentIdx + ":" + questions.get(currentIdx).correctIdx + ":" + resStr;
+                        byte[] data = msg.getBytes(StandardCharsets.UTF_8);
+                        socket.send(new DatagramPacket(data, data.length, InetAddress.getByName(ip), participantPorts.get(ip)));
+                    } catch (Exception e) {}
+                }
+            }
+        }
+        
+        // 2. Gửi một bản tin broadcast chung (Dự phòng cho máy chưa trả lời)
+        String generalMsg = "RESULT:" + currentIdx + ":" + questions.get(currentIdx).correctIdx + ":WAIT";
+        byte[] genData = generalMsg.getBytes(StandardCharsets.UTF_8);
         for (String ip : participants) {
             try {
-                socket.send(new DatagramPacket(data, data.length, InetAddress.getByName(ip), participantPorts.get(ip)));
+                socket.send(new DatagramPacket(genData, genData.length, InetAddress.getByName(ip), participantPorts.get(ip)));
             } catch (Exception e) {}
         }
     }
@@ -374,16 +403,33 @@ public class UDPQuizPanel extends JPanel {
                                 btnOptions[i].setText(p[i + 2]);
                                 btnOptions[i].setEnabled(true);
                                 btnOptions[i].setBackground(null);
+                                btnOptions[i].setForeground(Color.BLACK); // Reset màu chữ về đen
                             }
-                            lblPlayerStatus.setText("Hãy chọn đáp án!");
+                            lblPlayerStatus.setText("Hãy chọn đáp án cho câu " + (currentIdx + 1) + "!");
                             lblPlayerStatus.setForeground(Color.BLACK);
                         });
                     } else if (msg.startsWith("RESULT:")) {
                         String[] p = msg.split(":");
                         int correct = Integer.parseInt(p[2]);
+                        String myStatus = p.length > 3 ? p[3] : "WAIT";
+                        
                         SwingUtilities.invokeLater(() -> {
                             for(int i=0; i<4; i++) {
-                                if (i == correct) btnOptions[i].setBackground(successColor);
+                                if (i == correct) {
+                                    btnOptions[i].setBackground(successColor);
+                                    btnOptions[i].setForeground(Color.WHITE);
+                                } else {
+                                    btnOptions[i].setEnabled(false);
+                                }
+                            }
+                            if (myStatus.equals("ĐÚNG")) {
+                                lblPlayerStatus.setText("Chúc mừng! Bạn đã trả lời ĐÚNG.");
+                                lblPlayerStatus.setForeground(successColor);
+                            } else if (myStatus.equals("SAI")) {
+                                lblPlayerStatus.setText("Tiếc quá! Bạn đã trả lời SAI.");
+                                lblPlayerStatus.setForeground(dangerColor);
+                            } else {
+                                lblPlayerStatus.setText("Hết giờ! Đáp án đúng là " + (char)('A' + correct));
                             }
                         });
                     }

@@ -262,9 +262,27 @@ public class UDPReliableFilePanel extends JPanel {
                     
                     if (msg.equals("CONN_REQ")) {
                         log("Nhận yêu cầu kết nối từ " + p.getAddress().getHostAddress());
-                        sendACK("CONN_ACK", p.getAddress(), p.getPort());
+                        new Thread(() -> {
+                            int choice = JOptionPane.showConfirmDialog(this, 
+                                "Máy [" + p.getAddress().getHostAddress() + "] muốn thiết lập kết nối để gửi file.\nBạn có đồng ý không?", 
+                                "Xác nhận kết nối", 
+                                JOptionPane.YES_NO_OPTION, 
+                                JOptionPane.QUESTION_MESSAGE);
+                            
+                            try {
+                                if (choice == JOptionPane.YES_OPTION) {
+                                    sendACK("CONN_ACK", p.getAddress(), p.getPort());
+                                    log("Đã chấp nhận kết nối từ " + p.getAddress().getHostAddress());
+                                } else {
+                                    sendACK("CONN_REJ", p.getAddress(), p.getPort());
+                                    log("Đã từ chối kết nối từ " + p.getAddress().getHostAddress());
+                                }
+                            } catch (Exception ex) {
+                                log("Lỗi phản hồi handshake: " + ex.getMessage());
+                            }
+                        }).start();
                     } 
-                    else if (msg.equals("CONN_ACK") || msg.startsWith("ACK_")) {
+                    else if (msg.equals("CONN_ACK") || msg.equals("CONN_REJ") || msg.startsWith("ACK_")) {
                         ackQueue.offer(msg);
                     } 
                     else if (msg.startsWith("FILE_HEADER:")) {
@@ -295,17 +313,24 @@ public class UDPReliableFilePanel extends JPanel {
             ackQueue.clear(); // Xóa ACKs cũ
             sendPacket("CONN_REQ", destAddr, destPort);
 
-            if (waitForACK("CONN_ACK")) {
+            // Chờ phản hồi trong 10 giây (vì bên kia cần click đồng ý)
+            String res = waitForACKExtended(10000); 
+            if ("CONN_ACK".equals(res)) {
                 log("KẾT NỐI THÀNH CÔNG!");
                 lblStatus.setText("Trạng thái: Đã kết nối");
                 lblStatus.setForeground(new Color(46, 204, 113));
                 btnSend.setEnabled(true);
                 JOptionPane.showMessageDialog(this, "Kết nối với máy đối tác thành công! Bạn có thể gửi file ngay bây giờ.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            } else if ("CONN_REJ".equals(res)) {
+                log("KẾT NỐI BỊ TỪ CHỐI.");
+                lblStatus.setText("Trạng thái: Bị từ chối");
+                lblStatus.setForeground(Color.RED);
+                JOptionPane.showMessageDialog(this, "Máy đối tác đã từ chối yêu cầu kết nối.", "Thông báo", JOptionPane.WARNING_MESSAGE);
             } else {
-                log("Kết nối thất bại. Không nhận được phản hồi.");
+                log("Kết nối thất bại. Không nhận được phản hồi (Timeout).");
                 lblStatus.setText("Trạng thái: Lỗi kết nối");
                 lblStatus.setForeground(Color.RED);
-                JOptionPane.showMessageDialog(this, "Không thể kết nối với máy đối tác. Vui lòng kiểm tra IP/Port và đảm bảo ứng dụng đang chạy bên máy kia.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Không thể kết nối với máy đối tác. Vui lòng kiểm tra IP/Port và đảm bảo bên đối tác đã nhấn 'Đồng ý'.", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
             log("Lỗi handshake: " + e.getMessage());
@@ -443,17 +468,20 @@ public class UDPReliableFilePanel extends JPanel {
     }
 
     private boolean waitForACK(String expected) {
+        String res = waitForACKExtended(2500); // Mặc định 2.5s cho file chunks
+        return expected.equals(res);
+    }
+
+    private String waitForACKExtended(int timeoutMs) {
         try {
-            // Đợi ACK trong 2.5 giây từ queue
             long start = System.currentTimeMillis();
-            while (System.currentTimeMillis() - start < 2500) {
+            while (System.currentTimeMillis() - start < timeoutMs) {
                 String ack = ackQueue.poll(500, TimeUnit.MILLISECONDS);
-                if (ack != null && ack.equals(expected)) return true;
-                // Nếu nhận được ACK không mong đợi (ví dụ của chunk cũ), tiếp tục đợi
+                if (ack != null) return ack; // Trả về mã ACK nhận được (thành công, từ chối, v.v.)
             }
-            return false;
+            return "TIMEOUT";
         } catch (Exception e) {
-            return false;
+            return "ERROR";
         }
     }
 
