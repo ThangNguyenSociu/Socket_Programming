@@ -46,11 +46,11 @@ public class UDPReliableFilePanel extends JPanel {
     private DatagramSocket socket;
     private String physicalIP = "127.0.0.1";
 
-    private JTextField txtDestIP, txtDestPort;
+    private JTextField txtSrcPort, txtDestIP, txtDestPort;
     private JProgressBar progress;
     private JTextArea logArea;
-    private JButton btnSend, btnConnect;
-    private JLabel lblStatus;
+    private JButton btnSend, btnConnect, btnApplyConfig;
+    private JLabel lblStatus, lblLocalIP;
 
     // Dispatcher Queues
     private final BlockingQueue<String> ackQueue = new LinkedBlockingQueue<>();
@@ -67,30 +67,36 @@ public class UDPReliableFilePanel extends JPanel {
 
     private String getLocalPhysicalIP() {
         try {
-            NetworkInterface fallbackNI = null;
+            NetworkInterface selectedNI = null;
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while (interfaces.hasMoreElements()) {
                 NetworkInterface ni = interfaces.nextElement();
                 String dN = ni.getDisplayName().toLowerCase();
                 String n = ni.getName().toLowerCase();
-                if (ni.isLoopback() || !ni.isUp())
+                
+                if (ni.isLoopback() || !ni.isUp() || ni.isVirtual())
                     continue;
-                if (fallbackNI == null)
-                    fallbackNI = ni;
 
-                // MẠNG VẬT LÝ ƯU TIÊN: WIFI / ETHERNET (LOẠI BỎ RADMIN/HAMACHI/VPN)
-                if (!dN.contains("vmware") && !n.contains("vmware") && !dN.contains("virtual") && !n.contains("virtual") && !dN.contains("vbox") && !n.contains("vbox")
-                        && !dN.contains("radmin") && !n.contains("radmin") && !dN.contains("hamachi") && !n.contains("hamachi") && !dN.contains("zerotier") && !n.contains("zerotier")
-                        && !dN.contains("tunnel") && !n.contains("tunnel") && !dN.contains("teredo") && !n.contains("teredo") && !dN.contains("pseudo") && !n.contains("pseudo")) {
-                    for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
-                        if (ia.getAddress() instanceof Inet4Address && ia.getBroadcast() != null) {
-                            return ia.getAddress().getHostAddress();
-                        }
-                    }
+                // LOẠI BỎ CÁC CARD MẠNG ẢO / VPN PHỔ BIẾN
+                if (dN.contains("vmware") || n.contains("vmware") || dN.contains("virtual") || n.contains("virtual") || dN.contains("vbox") || n.contains("vbox")
+                    || dN.contains("radmin") || n.contains("radmin") || dN.contains("hamachi") || n.contains("hamachi") || dN.contains("zerotier") || n.contains("zerotier")
+                    || dN.contains("tunnel") || n.contains("tunnel") || dN.contains("teredo") || n.contains("teredo") || dN.contains("pseudo") || n.contains("pseudo")) {
+                    continue;
+                }
+
+                // ƯU TIÊN WIFI / WLAN
+                if (dN.contains("wi-fi") || dN.contains("wlan") || dN.contains("wireless") || dN.contains("802.11")) {
+                    selectedNI = ni;
+                    break;
+                }
+
+                if (selectedNI == null) {
+                    selectedNI = ni;
                 }
             }
-            if (fallbackNI != null) {
-                for (InterfaceAddress ia : fallbackNI.getInterfaceAddresses()) {
+
+            if (selectedNI != null) {
+                for (InterfaceAddress ia : selectedNI.getInterfaceAddresses()) {
                     if (ia.getAddress() instanceof Inet4Address && ia.getBroadcast() != null) {
                         return ia.getAddress().getHostAddress();
                     }
@@ -107,30 +113,42 @@ public class UDPReliableFilePanel extends JPanel {
         topPanel.setOpaque(false);
         topPanel.setBackground(Color.WHITE);
 
-        // Hàng thông tin IP cục bộ
+        // HÀNG THÔNG TIN IP CỤC BỘ
         JPanel row0 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         row0.setOpaque(false);
-        JLabel lblInfo = new JLabel("● IP WiFi/LAN của bạn: " + physicalIP);
-        lblInfo.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblInfo.setForeground(primaryColor);
-        row0.add(lblInfo);
+        lblLocalIP = new JLabel("● IP WiFi/LAN của bạn: " + physicalIP);
+        lblLocalIP.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblLocalIP.setForeground(primaryColor);
+        row0.add(lblLocalIP);
         topPanel.add(row0);
 
-        // Hàng cấu hình đích
-        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        row1.setOpaque(false);
-        row1.setBorder(new TitledBorder(null, "CẤU HÌNH ĐỐI TÁC", TitledBorder.LEFT, TitledBorder.TOP, new Font("Segoe UI", Font.BOLD, 12), primaryColor));
-        
-        row1.add(new JLabel("Địa chỉ IP:"));
-        txtDestIP = new JTextField(physicalIP, 12);
+        // HÀNG CẤU HÌNH MẠNG (UDP CONFIG)
+        JPanel rowCfg = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        rowCfg.setOpaque(false);
+        rowCfg.setBorder(new TitledBorder(null, "CẤU HÌNH MẠNG UDP", TitledBorder.LEFT, TitledBorder.TOP, new Font("Segoe UI", Font.BOLD, 12), new Color(230, 126, 34)));
+
+        rowCfg.add(new JLabel("Port nguồn (Lắng nghe):"));
+        txtSrcPort = new JTextField(String.valueOf(PORT), 5);
+        txtSrcPort.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        rowCfg.add(txtSrcPort);
+
+        rowCfg.add(new JLabel("   IP Đích:"));
+        txtDestIP = new JTextField(physicalIP, 11);
         txtDestIP.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        row1.add(txtDestIP);
-        
-        row1.add(new JLabel("  Cổng (Port):"));
+        rowCfg.add(txtDestIP);
+
+        rowCfg.add(new JLabel("   Port Đích:"));
         txtDestPort = new JTextField(String.valueOf(PORT), 5);
         txtDestPort.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        row1.add(txtDestPort);
-        topPanel.add(row1);
+        rowCfg.add(txtDestPort);
+
+        btnApplyConfig = new JButton("CẬP NHẬT CẤU HÌNH");
+        btnApplyConfig.setBackground(new Color(230, 126, 34)); // Orange
+        btnApplyConfig.setForeground(Color.WHITE);
+        btnApplyConfig.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnApplyConfig.addActionListener(e -> applyConfig());
+        rowCfg.add(btnApplyConfig);
+        topPanel.add(rowCfg);
 
         // Hàng điều khiển
         JPanel rowControl = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
@@ -145,11 +163,11 @@ public class UDPReliableFilePanel extends JPanel {
 
         rowControl.add(btnConnect);
         rowControl.add(btnSend);
-        
+
         lblStatus = new JLabel("Trạng thái: Chưa kết nối");
         lblStatus.setFont(new Font("Segoe UI", Font.ITALIC, 13));
         rowControl.add(lblStatus);
-        
+
         topPanel.add(rowControl);
 
         add(topPanel, BorderLayout.NORTH);
@@ -187,21 +205,58 @@ public class UDPReliableFilePanel extends JPanel {
         btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
     }
 
+    private void applyConfig() {
+        try {
+            int newSrcPort = Integer.parseInt(txtSrcPort.getText());
+            physicalIP = getLocalPhysicalIP();
+            lblLocalIP.setText("● IP WiFi/LAN của bạn: " + physicalIP);
+            
+            // Restart Socket
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+            
+            socket = new DatagramSocket(null);
+            socket.setReuseAddress(true);
+            socket.bind(new InetSocketAddress(newSrcPort));
+            
+            log("--- CẬP NHẬT CẤU HÌNH ---");
+            log("Lắng nghe tại port: " + newSrcPort);
+            log("IP Đích: " + txtDestIP.getText() + ":" + txtDestPort.getText());
+            
+            btnSend.setEnabled(false);
+            lblStatus.setText("Trạng thái: Đã cập nhật cấu hình");
+            lblStatus.setForeground(Color.BLACK);
+            
+            JOptionPane.showMessageDialog(this, "Đã cập nhật cấu hình mạng thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception e) {
+            log("Lỗi cập nhật cấu hình: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Lỗi: Port không hợp lệ hoặc đang bị sử dụng!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            // Re-open on default if possible
+            startReceiver();
+        }
+    }
+
     private void startReceiver() {
         new Thread(() -> {
             try {
+                int currentPort = Integer.parseInt(txtSrcPort.getText());
                 if (socket == null || socket.isClosed()) {
                     socket = new DatagramSocket(null);
                     socket.setReuseAddress(true);
-                    socket.bind(new InetSocketAddress(PORT));
+                    socket.bind(new InetSocketAddress(currentPort));
                 }
-                log("Hệ thống UDP sẵn sàng tại cổng " + PORT);
+                log("Hệ thống UDP sẵn sàng tại cổng " + currentPort);
 
-                while (true) {
+                while (socket != null && !socket.isClosed()) {
                     byte[] buf = new byte[CHUNK_SIZE + 100];
                     DatagramPacket p = new DatagramPacket(buf, buf.length);
                     socket.setSoTimeout(0); 
-                    socket.receive(p);
+                    try {
+                        socket.receive(p);
+                    } catch (java.net.SocketException se) {
+                        break; // Socket closed externally
+                    }
 
                     String msg = new String(p.getData(), 0, p.getLength());
                     
