@@ -69,6 +69,7 @@ public class UDPBroadcastChatPanel extends JPanel {
     private java.util.List<String> broadcastIPs = new java.util.ArrayList<>();
 
     private Map<String, DefaultListModel<Message>> chatHistories = new HashMap<>();
+    private JList<Message> chatArea;
     private JTextField txtMsg;
     private JButton btnSend, btnVoice;
 
