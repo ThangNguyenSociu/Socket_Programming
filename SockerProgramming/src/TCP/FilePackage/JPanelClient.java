@@ -251,8 +251,13 @@ public class JPanelClient extends JPanel {
 	            JOptionPane.showMessageDialog(this, "Chưa có file nào để tải xuống!");
 	            return;
 	        }
-
+	        
 	        File tempFile = new File(lastReceivedFileName);
+	        if (!tempFile.exists()) {
+	            JOptionPane.showMessageDialog(this, "Không tìm thấy file tạm!");
+	            return;
+	        }
+
 	        JFileChooser fileChooser = new JFileChooser();
 	        fileChooser.setSelectedFile(new File(lastReceivedFileName.replace("client_received_", "")));
 
@@ -306,7 +311,7 @@ public class JPanelClient extends JPanel {
 	                }
 
 	                fos.close();
-	                lastReceivedFileName = "client_received_" + fileName;
+	                lastReceivedFileName = "received_" + fileName;
 	                SwingUtilities.invokeLater(() -> {
 	                    txtLog.append("Nhận thành công file: " + fileName + "\n");
 	                });
