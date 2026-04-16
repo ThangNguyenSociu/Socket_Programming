@@ -282,7 +282,6 @@ public class JPanelClient extends JPanel {
 	            }
 	        }
 	    });
-
 	}
 
 	private void startReceivingFile() {
