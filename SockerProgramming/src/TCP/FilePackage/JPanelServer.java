@@ -160,7 +160,7 @@ public class JPanelServer extends JPanel {
 	                serverSocket = new ServerSocket(port);
 
 	                System.out.println("Server đang đợi kết nối ở cổng " + port + "...");
-
+	                txtLog.append("Server đang đợi kết nối ở cổng " + port + "...");
 	                clientSocket = serverSocket.accept();
 
 	                dis = new DataInputStream(clientSocket.getInputStream());
