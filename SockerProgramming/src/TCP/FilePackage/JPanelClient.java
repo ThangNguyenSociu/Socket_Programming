@@ -246,6 +246,7 @@ public class JPanelClient extends JPanel {
 			}).start();
 		});
 
+
 		btnDowload.addActionListener(e -> {
 			if (lastReceivedFileName == null || lastReceivedFileName.isEmpty()) {
 				JOptionPane.showMessageDialog(this, "Chưa có file nào để tải xuống!");
@@ -277,12 +278,12 @@ public class JPanelClient extends JPanel {
 					JOptionPane.showMessageDialog(this, "Tải file thành công vào:\n" + saveFile.getAbsolutePath());
 					txtLog.append("Đã lưu file: " + saveFile.getName() + "\n");
 
+
 				} catch (IOException ex) {
 					JOptionPane.showMessageDialog(this, "Lỗi khi lưu file: " + ex.getMessage());
 				}
 			}
 		});
-
 	}
 
 	private void startReceivingFile() {
@@ -310,6 +311,7 @@ public class JPanelClient extends JPanel {
 						fos.write(buffer, 0, bytesRead);
 						totalRead += bytesRead;
 					}
+
 
 					fos.close();
 					lastReceivedFileName = "received_" + fileName;
