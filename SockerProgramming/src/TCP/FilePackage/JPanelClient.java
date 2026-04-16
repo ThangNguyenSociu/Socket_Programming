@@ -253,11 +253,6 @@ public class JPanelClient extends JPanel {
 	        }
 
 	        File tempFile = new File(lastReceivedFileName);
-	        if (!tempFile.exists()) {
-	            JOptionPane.showMessageDialog(this, "Không tìm thấy file tạm!");
-	            return;
-	        }
-
 	        JFileChooser fileChooser = new JFileChooser();
 	        fileChooser.setSelectedFile(new File(lastReceivedFileName.replace("client_received_", "")));
 
