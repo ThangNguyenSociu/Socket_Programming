@@ -63,6 +63,17 @@ public class UDPBroadcastChatPanel extends JPanel {
     private JList<String> onlineList;
     private Map<String, UserInfo> userMap = new HashMap<>();
 
+    // Cache để lọc trùng tin nhắn (Deduplication)
+    private final java.util.Set<String> processedMsgIds = java.util.Collections.synchronizedSet(
+            java.util.Collections.newSetFromMap(new java.util.LinkedHashMap<String, Boolean>() {
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                protected boolean removeEldestEntry(java.util.Map.Entry<String, Boolean> eldest) {
+                    return size() > 200; // Giới hạn lưu 200 tin nhắn gần nhất
+                }
+            }));
+
     private JPanel chatLabelPanel;
     private JLabel lblCurrentChat;
     private String currentChatIP = "";
@@ -335,7 +346,8 @@ public class UDPBroadcastChatPanel extends JPanel {
                 String senderIP = packet.getAddress().getHostAddress();
                 String msg = new String(packet.getData(), 0, packet.getLength(), StandardCharsets.UTF_8);
 
-                if (myLocalIPs.contains(senderIP)) {
+                // Kiểm tra xem có phải IP của chính mình không (bao gồm cả Loopback)
+                if (myLocalIPs.contains(senderIP) || senderIP.equals("127.0.0.1") || packet.getAddress().isLoopbackAddress()) {
                     System.out.println("[DEBUG-RECV] BỎ QUA GÓI TIN CỦA CHÍNH MÌNH TỪ IP: " + senderIP);
                     continue;
                 }
@@ -349,10 +361,20 @@ public class UDPBroadcastChatPanel extends JPanel {
     }
 
     private void processIncoming(String msg, String ip) {
-        String[] p = msg.split(":", 3);
+        String[] p = msg.split(":", 4); // Thử split tối đa 4 phần (TYPE:NICK:ID:CONTENT)
         if (p.length < 2)
             return;
         String type = p[0];
+
+        // Xử lý lọc trùng cho các tin nhắn có định dạng mới (4 phần)
+        if (p.length >= 4 && (type.equals("MSG") || type.equals("PVMSG") || type.equals("BVOICE") || type.equals("PVVOICE"))) {
+            String msgId = p[2];
+            if (processedMsgIds.contains(msgId)) {
+                System.out.println("[DEBUG-RECV] PHÁT HIỆN TIN NHẮN TRÙNG (ID: " + msgId + ") - ĐÃ BỎ QUA");
+                return;
+            }
+            processedMsgIds.add(msgId);
+        }
 
         if (type.equals("JOIN")) {
             String nick = p[1];
@@ -364,18 +386,23 @@ public class UDPBroadcastChatPanel extends JPanel {
             String avatarB64 = (p.length > 2) ? p[2] : "";
             addUser(ip, nick, avatarB64);
         } else if (type.equals("MSG")) {
-            addMessage("", p[1], p[2], false, false, null);
+            // Tương thích ngược: Nếu p.length == 3 thì là bản cũ, nội dung ở index 2. Nếu >= 4 thì nội dung ở index 3.
+            String content = (p.length >= 4) ? p[3] : p[2];
+            addMessage("", p[1], content, false, false, null);
         } else if (type.equals("PVMSG")) {
-            addMessage(ip, p[1], p[2], false, false, null);
+            String content = (p.length >= 4) ? p[3] : p[2];
+            addMessage(ip, p[1], content, false, false, null);
         } else if (type.equals("BVOICE")) {
             try {
-                byte[] audio = Base64.getDecoder().decode(p[2]);
+                String base64 = (p.length >= 4) ? p[3] : p[2];
+                byte[] audio = Base64.getDecoder().decode(base64);
                 addMessage("", p[1], "[▶ Click để nghe âm thanh]", false, true, audio);
             } catch (Exception e) {
             }
         } else if (type.equals("PVVOICE")) {
             try {
-                byte[] audio = Base64.getDecoder().decode(p[2]);
+                String base64 = (p.length >= 4) ? p[3] : p[2];
+                byte[] audio = Base64.getDecoder().decode(base64);
                 addMessage(ip, p[1], "[🔒▶ Click để nghe âm thanh]", false, true, audio);
             } catch (Exception e) {
             }
@@ -424,11 +451,14 @@ public class UDPBroadcastChatPanel extends JPanel {
         if (text.isEmpty())
             return;
 
+        String msgId = System.currentTimeMillis() + "_" + myNick + "_" + (int) (Math.random() * 1000);
+        processedMsgIds.add(msgId); // Tự đánh dấu ID của mình để không bị lặp nếu bounce-back
+
         if (currentChatIP.isEmpty()) {
-            sendPacket("MSG:" + myNick + ":" + text, "BROADCAST");
+            sendPacket("MSG:" + myNick + ":" + msgId + ":" + text, "BROADCAST");
             addMessage("", myNick, text, true, false, null);
         } else {
-            sendPacket("PVMSG:" + myNick + ":" + text, currentChatIP);
+            sendPacket("PVMSG:" + myNick + ":" + msgId + ":" + text, currentChatIP);
             addMessage(currentChatIP, myNick, text, true, false, null);
         }
         txtMsg.setText("");
@@ -468,11 +498,14 @@ public class UDPBroadcastChatPanel extends JPanel {
 
                 byte[] audioBytes = out.toByteArray();
                 String base64 = Base64.getEncoder().encodeToString(audioBytes);
+                String msgId = "V_" + System.currentTimeMillis() + "_" + (int) (Math.random() * 1000);
+                processedMsgIds.add(msgId);
+
                 if (currentChatIP.isEmpty()) {
-                    sendPacket("BVOICE:" + myNick + ":" + base64, "BROADCAST");
+                    sendPacket("BVOICE:" + myNick + ":" + msgId + ":" + base64, "BROADCAST");
                     addMessage("", myNick, "[▶ Click để nghe âm thanh (Bạn đã gửi)]", true, true, audioBytes);
                 } else {
-                    sendPacket("PVVOICE:" + myNick + ":" + base64, currentChatIP);
+                    sendPacket("PVVOICE:" + myNick + ":" + msgId + ":" + base64, currentChatIP);
                     addMessage(currentChatIP, myNick, "[🔒▶ Click để nghe âm thanh riêng (Bạn đã gửi)]", true, true,
                             audioBytes);
                 }
