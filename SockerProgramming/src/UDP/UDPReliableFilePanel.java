@@ -66,44 +66,46 @@ public class UDPReliableFilePanel extends JPanel {
     }
 
     private String getLocalPhysicalIP() {
+        // Cách 1: Thử kết nối tới một IP bên ngoài (8.8.8.8) để tìm interface đang hoạt động
+        try (DatagramSocket s = new DatagramSocket()) {
+            s.connect(InetAddress.getByName("8.8.8.8"), 10002);
+            String ip = s.getLocalAddress().getHostAddress();
+            if (!ip.equals("0.0.0.0") && !ip.equals("127.0.0.1")) {
+                return ip;
+            }
+        } catch (Exception e) {}
+
+        // Cách 2: Quét tất cả các card mạng
         try {
-            NetworkInterface selectedNI = null;
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while (interfaces.hasMoreElements()) {
                 NetworkInterface ni = interfaces.nextElement();
-                String dN = ni.getDisplayName().toLowerCase();
-                String n = ni.getName().toLowerCase();
-                
-                if (ni.isLoopback() || !ni.isUp() || ni.isVirtual())
-                    continue;
+                if (ni.isLoopback() || !ni.isUp()) continue;
 
-                // LOẠI BỎ CÁC CARD MẠNG ẢO / VPN PHỔ BIẾN
-                if (dN.contains("vmware") || n.contains("vmware") || dN.contains("virtual") || n.contains("virtual") || dN.contains("vbox") || n.contains("vbox")
-                    || dN.contains("radmin") || n.contains("radmin") || dN.contains("hamachi") || n.contains("hamachi") || dN.contains("zerotier") || n.contains("zerotier")
-                    || dN.contains("tunnel") || n.contains("tunnel") || dN.contains("teredo") || n.contains("teredo") || dN.contains("pseudo") || n.contains("pseudo")) {
-                    continue;
-                }
-
-                // ƯU TIÊN WIFI / WLAN
-                if (dN.contains("wi-fi") || dN.contains("wlan") || dN.contains("wireless") || dN.contains("802.11")) {
-                    selectedNI = ni;
-                    break;
-                }
-
-                if (selectedNI == null) {
-                    selectedNI = ni;
+                for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
+                    if (ia.getAddress() instanceof Inet4Address) {
+                        String ip = ia.getAddress().getHostAddress();
+                        // Ưu tiên dải LAN
+                        if (ip.startsWith("192.168.") || ip.startsWith("172.") || ip.startsWith("10.")) {
+                            return ip;
+                        }
+                    }
                 }
             }
-
-            if (selectedNI != null) {
-                for (InterfaceAddress ia : selectedNI.getInterfaceAddresses()) {
-                    if (ia.getAddress() instanceof Inet4Address && ia.getBroadcast() != null) {
+            
+            // Fallback: Nếu không thấy LAN, lấy IPv4 đầu tiên không phải Loopback
+            interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface ni = interfaces.nextElement();
+                if (ni.isLoopback() || !ni.isUp()) continue;
+                for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
+                    if (ia.getAddress() instanceof Inet4Address) {
                         return ia.getAddress().getHostAddress();
                     }
                 }
             }
-        } catch (Exception e) {
-        }
+        } catch (Exception e) {}
+        
         return "127.0.0.1";
     }
 
@@ -159,7 +161,7 @@ public class UDPReliableFilePanel extends JPanel {
 
         btnSend = new JButton("CHỌN & GỬI FILE");
         styleButton(btnSend, primaryColor);
-        btnSend.setEnabled(false); // Chỉ bật sau khi connect thành công
+        btnSend.setEnabled(true); // Luôn cho phép gửi, handshake sẽ chạy ngầm
 
         rowControl.add(btnConnect);
         rowControl.add(btnSend);
@@ -208,10 +210,15 @@ public class UDPReliableFilePanel extends JPanel {
     private void applyConfig() {
         try {
             int newSrcPort = Integer.parseInt(txtSrcPort.getText());
-            physicalIP = getLocalPhysicalIP();
-            lblLocalIP.setText("● IP WiFi/LAN của bạn: " + physicalIP);
             
-            // Restart Socket
+            // Nếu port không đổi thì chỉ log thông báo, không khởi động lại socket
+            if (socket != null && !socket.isClosed() && socket.getLocalPort() == newSrcPort) {
+                log("Đã cập nhật cấu hình đích: " + txtDestIP.getText() + ":" + txtDestPort.getText());
+                lblStatus.setText("Trạng thái: Đã cập nhật xong");
+                return;
+            }
+
+            // Đổi port nguồn: Cần restart socket và Thread lắng nghe
             if (socket != null && !socket.isClosed()) {
                 socket.close();
             }
@@ -220,19 +227,13 @@ public class UDPReliableFilePanel extends JPanel {
             socket.setReuseAddress(true);
             socket.bind(new InetSocketAddress(newSrcPort));
             
-            log("--- CẬP NHẬT CẤU HÌNH ---");
-            log("Lắng nghe tại port: " + newSrcPort);
-            log("IP Đích: " + txtDestIP.getText() + ":" + txtDestPort.getText());
+            log("--- CẬP NHẬT CỔNG NGUỒN (" + newSrcPort + ") ---");
+            startReceiver(); // Khởi động lại thread lắng nghe
             
-            btnSend.setEnabled(false);
-            lblStatus.setText("Trạng thái: Đã cập nhật cấu hình");
+            lblStatus.setText("Trạng thái: Đã đổi cổng thành công");
             lblStatus.setForeground(Color.BLACK);
-            
-            JOptionPane.showMessageDialog(this, "Đã cập nhật cấu hình mạng thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
-            log("Lỗi cập nhật cấu hình: " + e.getMessage());
-            JOptionPane.showMessageDialog(this, "Lỗi: Port không hợp lệ hoặc đang bị sử dụng!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            // Re-open on default if possible
+            log("Lỗi cấu hình: " + e.getMessage());
             startReceiver();
         }
     }
@@ -261,26 +262,12 @@ public class UDPReliableFilePanel extends JPanel {
                     String msg = new String(p.getData(), 0, p.getLength());
                     
                     if (msg.equals("CONN_REQ")) {
-                        log("Nhận yêu cầu kết nối từ " + p.getAddress().getHostAddress());
-                        new Thread(() -> {
-                            int choice = JOptionPane.showConfirmDialog(this, 
-                                "Máy [" + p.getAddress().getHostAddress() + "] muốn thiết lập kết nối để gửi file.\nBạn có đồng ý không?", 
-                                "Xác nhận kết nối", 
-                                JOptionPane.YES_NO_OPTION, 
-                                JOptionPane.QUESTION_MESSAGE);
-                            
-                            try {
-                                if (choice == JOptionPane.YES_OPTION) {
-                                    sendACK("CONN_ACK", p.getAddress(), p.getPort());
-                                    log("Đã chấp nhận kết nối từ " + p.getAddress().getHostAddress());
-                                } else {
-                                    sendACK("CONN_REJ", p.getAddress(), p.getPort());
-                                    log("Đã từ chối kết nối từ " + p.getAddress().getHostAddress());
-                                }
-                            } catch (Exception ex) {
-                                log("Lỗi phản hồi handshake: " + ex.getMessage());
-                            }
-                        }).start();
+                        log("Nhận yêu cầu kết nối từ " + p.getAddress().getHostAddress() + " (Tự động chấp nhận)");
+                        try {
+                            sendACK("CONN_ACK", p.getAddress(), p.getPort());
+                        } catch (Exception ex) {
+                            log("Lỗi phản hồi handshake: " + ex.getMessage());
+                        }
                     } 
                     else if (msg.equals("CONN_ACK") || msg.equals("CONN_REJ") || msg.startsWith("ACK_")) {
                         ackQueue.offer(msg);
@@ -305,35 +292,27 @@ public class UDPReliableFilePanel extends JPanel {
     private void connectToPeer() {
         try {
             btnConnect.setEnabled(false);
-            lblStatus.setText("Trạng thái: Đang thử kết nối...");
+            lblStatus.setText("Trạng thái: Đang kết nối ngầm...");
             InetAddress destAddr = InetAddress.getByName(txtDestIP.getText());
             int destPort = Integer.parseInt(txtDestPort.getText());
 
-            log("Gửi yêu cầu kết nối tới " + destAddr.getHostAddress() + "...");
-            ackQueue.clear(); // Xóa ACKs cũ
+            log("Handshake tới " + destAddr.getHostAddress() + "...");
+            ackQueue.clear(); 
             sendPacket("CONN_REQ", destAddr, destPort);
 
-            // Chờ phản hồi trong 10 giây (vì bên kia cần click đồng ý)
-            String res = waitForACKExtended(10000); 
+            // Chờ phản hồi nhanh (3 giây)
+            String res = waitForACKExtended(3000); 
             if ("CONN_ACK".equals(res)) {
-                log("KẾT NỐI THÀNH CÔNG!");
+                log("ĐỐI TÁC ONLINE!");
                 lblStatus.setText("Trạng thái: Đã kết nối");
                 lblStatus.setForeground(new Color(46, 204, 113));
-                btnSend.setEnabled(true);
-                JOptionPane.showMessageDialog(this, "Kết nối với máy đối tác thành công! Bạn có thể gửi file ngay bây giờ.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-            } else if ("CONN_REJ".equals(res)) {
-                log("KẾT NỐI BỊ TỪ CHỐI.");
-                lblStatus.setText("Trạng thái: Bị từ chối");
-                lblStatus.setForeground(Color.RED);
-                JOptionPane.showMessageDialog(this, "Máy đối tác đã từ chối yêu cầu kết nối.", "Thông báo", JOptionPane.WARNING_MESSAGE);
             } else {
-                log("Kết nối thất bại. Không nhận được phản hồi (Timeout).");
-                lblStatus.setText("Trạng thái: Lỗi kết nối");
-                lblStatus.setForeground(Color.RED);
-                JOptionPane.showMessageDialog(this, "Không thể kết nối với máy đối tác. Vui lòng kiểm tra IP/Port và đảm bảo bên đối tác đã nhấn 'Đồng ý'.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                log("Không thấy phản hồi từ " + destAddr.getHostAddress());
+                lblStatus.setText("Trạng thái: Chưa có phản hồi");
+                lblStatus.setForeground(Color.ORANGE);
             }
         } catch (Exception e) {
-            log("Lỗi handshake: " + e.getMessage());
+            log("Lỗi: " + e.getMessage());
         } finally {
             btnConnect.setEnabled(true);
         }
